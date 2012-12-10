@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <cutils/android_reboot.h>
@@ -118,6 +119,14 @@ int android_reboot(int cmd, int flags, char *arg)
             break;
 
         case ANDROID_RB_RESTART2:
+#ifdef RECOVERY_PRE_COMMAND
+            if (!strcmp(arg,"recovery")) {
+                char cmd[PATH_MAX];
+                sprintf(cmd, RECOVERY_PRE_COMMAND " %s", arg);
+                system(cmd);
+            }
+#endif
+
             ret = __reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
                            LINUX_REBOOT_CMD_RESTART2, arg);
             break;
