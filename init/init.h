@@ -73,7 +73,9 @@ struct svcenvinfo {
                                  so it can be restarted with its class */
 #define SVC_RC_DISABLED 0x80  /* Remember if the disabled flag was set in the rc script */
 
+#ifndef NR_SVC_SUPP_GIDS
 #define NR_SVC_SUPP_GIDS 12    /* twelve supplementary groups */
+#endif
 
 #define COMMAND_RETRY_TIMEOUT 5
 
@@ -95,7 +97,9 @@ struct service {
     gid_t supp_gids[NR_SVC_SUPP_GIDS];
     size_t nr_supp_gids;
 
+#ifdef HAVE_SELINUX
     char *seclabel;
+#endif
 
     struct socketinfo *sockets;
     struct svcenvinfo *envvars;
@@ -134,8 +138,10 @@ void property_changed(const char *name, const char *value);
 
 int load_565rle_image( char *file_name );
 
+#ifdef HAVE_SELINUX
 extern struct selabel_handle *sehandle;
 extern struct selabel_handle *sehandle_prop;
 extern int selinux_reload_policy(void);
+#endif
 
 #endif	/* _INIT_INIT_H */

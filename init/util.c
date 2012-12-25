@@ -23,7 +23,9 @@
 #include <errno.h>
 #include <time.h>
 
+#ifdef HAVE_SELINUX
 #include <selinux/label.h>
+#endif
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -87,7 +89,9 @@ int create_socket(const char *name, int type, mode_t perm, uid_t uid, gid_t gid)
 {
     struct sockaddr_un addr;
     int fd, ret;
+#ifdef HAVE_SELINUX
     char *secon;
+#endif
 
     fd = socket(PF_UNIX, type, 0);
     if (fd < 0) {
@@ -106,12 +110,14 @@ int create_socket(const char *name, int type, mode_t perm, uid_t uid, gid_t gid)
         goto out_close;
     }
 
+#ifdef HAVE_SELINUX
     secon = NULL;
     if (sehandle) {
         ret = selabel_lookup(sehandle, &secon, addr.sun_path, S_IFSOCK);
         if (ret == 0)
             setfscreatecon(secon);
     }
+#endif
 
     ret = bind(fd, (struct sockaddr *) &addr, sizeof (addr));
     if (ret) {
@@ -119,8 +125,10 @@ int create_socket(const char *name, int type, mode_t perm, uid_t uid, gid_t gid)
         goto out_unlink;
     }
 
+#ifdef HAVE_SELINUX
     setfscreatecon(NULL);
     freecon(secon);
+#endif
 
     chown(addr.sun_path, uid, gid);
     chmod(addr.sun_path, perm);
@@ -388,10 +396,6 @@ void get_hardware_name(char *hardware, unsigned int *revision)
     int fd, n;
     char *x, *hw, *rev;
 
-    /* Hardware string was provided on kernel command line */
-    if (hardware[0])
-        return;
-
     fd = open("/proc/cpuinfo", O_RDONLY);
     if (fd < 0) return;
 
@@ -403,18 +407,21 @@ void get_hardware_name(char *hardware, unsigned int *revision)
     hw = strstr(data, "\nHardware");
     rev = strstr(data, "\nRevision");
 
-    if (hw) {
-        x = strstr(hw, ": ");
-        if (x) {
-            x += 2;
-            n = 0;
-            while (*x && *x != '\n') {
-                if (!isspace(*x))
-                    hardware[n++] = tolower(*x);
-                x++;
-                if (n == 31) break;
+    /* Hardware string was provided on kernel command line */
+    if (!hardware[0]) {
+        if (hw) {
+            x = strstr(hw, ": ");
+            if (x) {
+                x += 2;
+                n = 0;
+                while (*x && *x != '\n') {
+                    if (!isspace(*x))
+                        hardware[n++] = tolower(*x);
+                    x++;
+                    if (n == 31) break;
+                }
+                hardware[n] = 0;
             }
-            hardware[n] = 0;
         }
     }
 
@@ -460,27 +467,31 @@ int make_dir(const char *path, mode_t mode)
 {
     int rc;
 
+#ifdef HAVE_SELINUX
     char *secontext = NULL;
 
     if (sehandle) {
         selabel_lookup(sehandle, &secontext, path, mode);
         setfscreatecon(secontext);
     }
+#endif
 
     rc = mkdir(path, mode);
 
+#ifdef HAVE_SELINUX
     if (secontext) {
         int save_errno = errno;
         freecon(secontext);
         setfscreatecon(NULL);
         errno = save_errno;
     }
-
+#endif
     return rc;
 }
 
 int restorecon(const char *pathname)
 {
+#ifdef HAVE_SELINUX
     char *secontext = NULL;
     struct stat sb;
     int i;
@@ -497,5 +508,6 @@ int restorecon(const char *pathname)
         return -errno;
     }
     freecon(secontext);
+#endif
     return 0;
 }
