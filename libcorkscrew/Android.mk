@@ -36,7 +36,7 @@ LOCAL_SRC_FILES := $(generic_src_files)
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_SRC_FILES += $(arm_src_files)
-LOCAL_CFLAGS += -DCORKSCREW_HAVE_ARCH
+LOCAL_CFLAGS += -DCORKSCREW_HAVE_ARCH -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=unused-parameter
 endif
 ifeq ($(TARGET_ARCH),x86)
 LOCAL_SRC_FILES += $(x86_src_files)
