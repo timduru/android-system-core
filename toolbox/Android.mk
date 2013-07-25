@@ -57,6 +57,7 @@ TOOLS := \
 	lsof \
 	du \
 	md5 \
+	clear \
 	restart
 
 ifeq ($(HAVE_SELINUX),true)
@@ -98,7 +99,7 @@ else
 	LOCAL_SRC_FILES += reboot.c
 endif
 
-LOCAL_SHARED_LIBRARIES := libcutils libc libusbhost
+LOCAL_SHARED_LIBRARIES := libcutils liblog libc libusbhost
 
 LOCAL_C_INCLUDES := bionic/libc/bionic
 
@@ -109,6 +110,11 @@ LOCAL_SHARED_LIBRARIES += libselinux
 LOCAL_C_INCLUDES += external/libselinux/include
 
 endif
+LOCAL_SHARED_LIBRARIES := \
+	libcutils \
+	liblog \
+	libc \
+	libusbhost \
 
 LOCAL_MODULE := toolbox
 
