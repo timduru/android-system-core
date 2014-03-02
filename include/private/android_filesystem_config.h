@@ -107,6 +107,14 @@
 #define AID_SHARED_GID_START 50000 /* start of gids for apps in each user to share */
 #define AID_SHARED_GID_END   59999 /* start of gids for apps in each user to share */
 
+/* Since permissions are not locked on external storage (internal with inverted kernel) we could use it
+to share data across local users (not possible with current state of Android without giving root to every users)
+here are groups that owner can use to set custom permissions on folders to share */
+#define AID_SHARED_MUSIC 7000 /* Custom GID for music folders to be shared across local users on external storage */
+#define AID_SHARED_PICTURES 7001 /* Custom GID for pics folders to be shared across local users on external storage */
+#define AID_SHARED_VIDEO 7002 /* Custom GID for video folders to be shared across local users on external storage */
+#define AID_SHARED_GAME_DATA 7500 /* Custom GID for game data sharing across local users */
+
 #if !defined(EXCLUDE_FS_CONFIG_STRUCTURES)
 struct android_id_info {
     const char *name;
@@ -170,6 +178,11 @@ static const struct android_id_info android_ids[] = {
     { "qcom_diag",     AID_QCOM_DIAG, },
     { "misc",          AID_MISC, },
     { "nobody",        AID_NOBODY, },
+    
+    { "shared_music", AID_SHARED_MUSIC, },
+    { "shared_pictures", AID_SHARED_PICTURES, },
+    { "shared_video", AID_SHARED_VIDEO, },
+    { "shared_game_data", AID_SHARED_GAME_DATA, },
 };
 
 #define android_id_count \
