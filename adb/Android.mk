@@ -34,18 +34,16 @@ endif
 
 ifeq ($(HOST_OS),windows)
   USB_SRCS := usb_windows.c
-  EXTRA_SRCS := get_my_path_windows.c ../libcutils/list.c
+  EXTRA_SRCS := get_my_path_windows.c
   EXTRA_STATIC_LIBS := AdbWinApi
   ifneq ($(strip $(USE_CYGWIN)),)
     # Pure cygwin case
     LOCAL_LDLIBS += -lpthread -lgdi32
-    LOCAL_C_INCLUDES += /usr/include/w32api/ddk
   endif
   ifneq ($(strip $(USE_MINGW)),)
     # MinGW under Linux case
     LOCAL_LDLIBS += -lws2_32 -lgdi32
     USE_SYSDEPS_WIN32 := 1
-    LOCAL_C_INCLUDES += /usr/i586-mingw32msvc/include/ddk
   endif
   LOCAL_C_INCLUDES += development/host/windows/usb/api/
 endif
@@ -109,7 +107,6 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
 	adb.c \
-	backup_service.c \
 	fdevent.c \
 	transport.c \
 	transport_local.c \
@@ -121,8 +118,7 @@ LOCAL_SRC_FILES := \
 	jdwp_service.c \
 	framebuffer_service.c \
 	remount_service.c \
-	usb_linux_client.c \
-	log_service.c
+	usb_linux_client.c
 
 LOCAL_CFLAGS := -g -DADB_HOST=0 -Wall -Wno-unused-parameter
 # ADB requires optimizations to build, so if none are provided, force it.
@@ -144,7 +140,7 @@ LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE_PATH := $(TARGET_ROOT_OUT_SBIN)
 LOCAL_UNSTRIPPED_PATH := $(TARGET_ROOT_OUT_SBIN_UNSTRIPPED)
 
-LOCAL_STATIC_LIBRARIES := liblog libcutils libc libmincrypt
+LOCAL_STATIC_LIBRARIES := liblog libcutils libc libmincrypt libselinux
 include $(BUILD_EXECUTABLE)
 
 
@@ -152,8 +148,6 @@ include $(BUILD_EXECUTABLE)
 # =========================================================
 ifneq ($(SDK_ONLY),true)
 include $(CLEAR_VARS)
-
-LOCAL_LDLIBS := -lrt -ldl -lpthread
 
 LOCAL_SRC_FILES := \
 	adb.c \
@@ -176,8 +170,7 @@ LOCAL_CFLAGS := \
 	-g \
 	-DADB_HOST=1 \
 	-DADB_HOST_ON_TARGET=1 \
-	-Wall \
-	-Wno-unused-parameter \
+	-Wall -Wno-unused-parameter -Werror \
 	-D_XOPEN_SOURCE \
 	-D_GNU_SOURCE
 
@@ -193,7 +186,7 @@ endif
 
 LOCAL_MODULE := adb
 
-LOCAL_STATIC_LIBRARIES := libzipfile libunz libcutils
+LOCAL_STATIC_LIBRARIES := libzipfile libunz libcutils liblog
 
 LOCAL_SHARED_LIBRARIES := libcrypto
 
