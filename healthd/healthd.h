@@ -109,7 +109,6 @@ struct healthd_mode_ops {
     int (*preparetowait)(void);
     void (*heartbeat)(void);
     void (*battery_update)(struct android::BatteryProperties *props);
->>>>>>> android-5.0.0_r2
 };
 
 extern struct healthd_mode_ops *healthd_mode_ops;

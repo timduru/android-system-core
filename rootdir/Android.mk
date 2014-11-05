@@ -15,7 +15,7 @@ include $(BUILD_PREBUILT)
 endif
 #######################################
 # init.environ.rc
-ifneq ($(TARGET_PROVIDES_ENVIRON_RC),true)
+
 include $(CLEAR_VARS)
 LOCAL_MODULE_CLASS := ETC
 LOCAL_MODULE := init.environ.rc
