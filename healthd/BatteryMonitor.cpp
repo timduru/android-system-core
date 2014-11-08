@@ -271,9 +271,7 @@ bool BatteryMonitor::update(void) {
                   props.chargerWirelessOnline ? "w" : "");
     }
 
-    if (mBatteryPropertiesRegistrar != NULL)
-        mBatteryPropertiesRegistrar->notifyListeners(props);
-
+    healthd_mode_ops->battery_update(&props);
     return props.chargerAcOnline | props.chargerUsbOnline |
             props.chargerWirelessOnline;
 }
@@ -436,7 +434,7 @@ void BatteryMonitor::init(struct healthd_config *hc) {
                     path.clear();
                     path.appendFormat("%s/%s/capacity", POWER_SUPPLY_SYSFS_PATH,
                                       name);
-                    if (access(path, R_OK) == 0 && getIntField(path) > 0)
+                    if (access(path, R_OK) == 0)
                         mHealthdConfig->batteryCapacityPath = path;
                 }
 
@@ -513,7 +511,6 @@ void BatteryMonitor::init(struct healthd_config *hc) {
 
     if (!mChargerNames.size())
         KLOG_ERROR(LOG_TAG, "No charger supplies found\n");
-
     if (!mBatteryDevicePresent) {
         KLOG_INFO(LOG_TAG, "No battery devices found\n");
         hc->periodic_chores_interval_fast = -1;
@@ -533,10 +530,6 @@ void BatteryMonitor::init(struct healthd_config *hc) {
             KLOG_WARNING(LOG_TAG, "BatteryTemperaturePath not found\n");
         if (mHealthdConfig->batteryTechnologyPath.isEmpty())
             KLOG_WARNING(LOG_TAG, "BatteryTechnologyPath not found\n");
-    if (nosvcmgr == false) {
-            mBatteryPropertiesRegistrar = new BatteryPropertiesRegistrar(this);
-            mBatteryPropertiesRegistrar->publish();
-
     }
 
     if (property_get("ro.boot.fake_battery", pval, NULL) > 0
