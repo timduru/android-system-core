@@ -18,6 +18,7 @@
 // Timer functions.
 //
 #include <utils/Timers.h>
+#include <utils/Log.h>
 
 #include <limits.h>
 #include <sys/time.h>
@@ -110,7 +111,7 @@ long long DurationTimer::durationUsecs(void) const
 /*static*/ void DurationTimer::addToTimeval(struct timeval* ptv, long usec)
 {
     if (usec < 0) {
-        ALOG(LOG_WARN, "", "Negative values not supported in addToTimeval\n");
+        ALOG(LOG_WARN,"", "Negative values not supported in addToTimeval\n");
         return;
     }
 

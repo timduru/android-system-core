@@ -179,6 +179,7 @@ int main(int argc, char **argv)
                 return usage();
             }
         } else if(!strcmp(arg, "--dt")) {
+            char *val = argv[1];
             dt_fn = val;
         } else {
             return usage();
