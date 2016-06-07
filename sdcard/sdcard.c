@@ -341,7 +341,7 @@ static ssize_t get_node_path_locked(struct node* node, char* buf, size_t bufsize
 
     ssize_t pathlen = 0;
     if (node->parent && node->graft_path == NULL) {
-        pathlen = get_node_path_locked(node->parent, buf, bufsize - namelen - 2);
+        pathlen = get_node_path_locked(node->parent, buf, bufsize - namelen - 1);
         if (pathlen < 0) {
             return -1;
         }
@@ -512,6 +512,16 @@ static void derive_permissions_locked(struct fuse* fuse, struct node *parent,
             node->uid = multiuser_get_uid(parent->userid, appid);
         }
         break;
+    }
+}
+
+static void derive_permissions_recursive_locked(struct fuse* fuse, struct node *parent) {
+    struct node *node;
+    for (node = parent->child; node; node = node->next) {
+        derive_permissions_locked(fuse, parent, node);
+        if (node->child) {
+            derive_permissions_recursive_locked(fuse, node);
+        }
     }
 }
 
@@ -1153,6 +1163,8 @@ static int handle_rename(struct fuse* fuse, struct fuse_handler* handler,
     res = rename_node_locked(child_node, new_name, new_actual_name);
     if (!res) {
         remove_node_from_parent_locked(child_node);
+        derive_permissions_locked(fuse, new_parent_node, child_node);
+        derive_permissions_recursive_locked(fuse, child_node);
         add_node_to_parent_locked(child_node, new_parent_node);
     }
     goto done;
@@ -1671,6 +1683,10 @@ static int read_package_list(struct fuse_global* global) {
     TRACE("read_package_list: found %zu packages\n",
             hashmapSize(global->package_to_appid));
     fclose(file);
+
+    /* Regenerate ownership details using newly loaded mapping */
+    derive_permissions_recursive_locked(global->fuse_default, &global->root);
+
     pthread_mutex_unlock(&global->lock);
     return 0;
 }
