@@ -16,6 +16,7 @@ init_cflags += \
     $(init_options) \
     -Wall -Wextra \
     -Wno-unused-parameter \
+    -Wno-unused-function \
     -Werror \
 
 # --
