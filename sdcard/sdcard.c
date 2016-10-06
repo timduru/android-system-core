@@ -113,6 +113,9 @@
  * or that a reply has already been written. */
 #define NO_STATUS 1
 
+static bool worldWritableExternalStorage = false;
+
+
 /* Supplementary groups to execute with */
 static const gid_t kGroups[1] = { AID_PACKAGE_INFO };
 
@@ -427,6 +430,9 @@ static void attr_from_stat(struct fuse* fuse, struct fuse_attr *attr,
     }
 
     int visible_mode = 0775 & ~fuse->mask;
+
+    if (worldWritableExternalStorage) visible_mode = 0777;
+
     if (node->perm == PERM_PRE_ROOT) {
         /* Top of multi-user view should always be visible to ensure
          * secondary users can traverse inside. */
@@ -2056,7 +2062,16 @@ static bool should_use_sdcardfs(void) {
     }
 }
 
+static void initWorldWritableStorage() {
+    char value[PROPERTY_VALUE_MAX];
+    property_get("persist.external_drive_world_rw", value, "");
+    worldWritableExternalStorage = (value[0] == '1');
+}
+
+
 int main(int argc, char **argv) {
+    initWorldWritableStorage();
+
     const char *source_path = NULL;
     const char *label = NULL;
     uid_t uid = 0;
