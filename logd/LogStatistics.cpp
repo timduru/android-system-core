@@ -49,7 +49,7 @@ char *pidToName(pid_t pid) {
             if (ret > 0) {
                 buffer[sizeof(buffer)-1] = '\0';
                 // frameworks intermediate state
-                if (fastcmp<strcmp>(buffer, "<pre-initialized>")) {
+                if (fast<strcmp>(buffer, "<pre-initialized>")) {
                     retval = strdup(buffer);
                 }
             }
@@ -189,7 +189,7 @@ const char *LogStatistics::uidToName(uid_t uid) const {
             if (nameTmp) {
                 if (!name) {
                     name = strdup(nameTmp);
-                } else if (fastcmp<strcmp>(name, nameTmp)) {
+                } else if (fast<strcmp>(name, nameTmp)) {
                     free(const_cast<char *>(name));
                     name = NULL;
                     break;

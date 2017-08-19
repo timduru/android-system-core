@@ -20,7 +20,6 @@
 #include <sys/types.h>
 
 #include <log/log.h>
-#include <utils/FastStrcmp.h>
 #include <sysutils/SocketClient.h>
 
 // Hijack this header as a common include file used by most all sources
@@ -56,6 +55,23 @@ bool property_get_bool(const char *key, int def);
 
 static inline bool worstUidEnabledForLogid(log_id_t id) {
     return (id == LOG_ID_MAIN) || (id == LOG_ID_SYSTEM) || (id == LOG_ID_RADIO);
+}
+
+template <int (*cmp)(const char *l, const char *r, const size_t s)>
+static inline int fast(const char *l, const char *r, const size_t s) {
+    return (*l != *r) || cmp(l + 1, r + 1, s - 1);
+}
+
+template <int (*cmp)(const void *l, const void *r, const size_t s)>
+static inline int fast(const void *lv, const void *rv, const size_t s) {
+    const char *l = static_cast<const char *>(lv);
+    const char *r = static_cast<const char *>(rv);
+    return (*l != *r) || cmp(l + 1, r + 1, s - 1);
+}
+
+template <int (*cmp)(const char *l, const char *r)>
+static inline int fast(const char *l, const char *r) {
+    return (*l != *r) || cmp(l + 1, r + 1);
 }
 
 #endif // _LOGD_LOG_UTILS_H__
