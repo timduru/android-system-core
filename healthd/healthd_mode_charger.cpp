@@ -30,6 +30,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <functional>
+
 #include <android-base/file.h>
 #include <android-base/stringprintf.h>
 
@@ -37,11 +39,12 @@
 #include <linux/netlink.h>
 
 #include <batteryservice/BatteryService.h>
-#include <cutils/android_reboot.h>
 #include <cutils/klog.h>
 #include <cutils/misc.h>
 #include <cutils/uevent.h>
 #include <cutils/properties.h>
+#include <minui/minui.h>
+#include <sys/reboot.h>
 
 #ifdef CHARGER_ENABLE_SUSPEND
 #include <suspend/autosuspend.h>
@@ -49,7 +52,6 @@
 
 #include "animation.h"
 #include "AnimationParser.h"
-#include "minui/minui.h"
 
 #include <healthd/healthd.h>
 
@@ -65,7 +67,7 @@ char *locale;
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
-#define ARRAY_SIZE(x)           (sizeof(x)/sizeof(x[0]))
+#define ARRAY_SIZE(x)           (sizeof(x)/sizeof((x)[0]))
 
 #define MSEC_PER_SEC            (1000LL)
 #define NSEC_PER_MSEC           (1000000LL)
@@ -568,9 +570,8 @@ static void update_screen_state(struct charger *charger, int64_t now)
     }
 }
 
-static int set_key_callback(int code, int value, void *data)
+static int set_key_callback(struct charger *charger, int code, int value)
 {
-    struct charger *charger = (struct charger *)data;
     int64_t now = curr_time_ms();
     int down = !!value;
 
@@ -605,7 +606,7 @@ static void update_input_state(struct charger *charger,
 {
     if (ev->type != EV_KEY)
         return;
-    set_key_callback(ev->code, ev->value, charger);
+    set_key_callback(charger, ev->code, ev->value);
 }
 
 static void set_next_key_check(struct charger *charger,
@@ -635,7 +636,7 @@ static void process_key(struct charger *charger, int code, int64_t now)
                 } else {
                     if (charger->batt_anim->cur_level >= charger->boot_min_cap) {
                         LOGW("[%" PRId64 "] rebooting\n", now);
-                        android_reboot(ANDROID_RB_RESTART, 0, 0);
+                        reboot(RB_AUTOBOOT);
                     } else {
                         LOGV("[%" PRId64 "] ignore power-button press, battery level "
                             "less than minimum\n", now);
@@ -690,7 +691,7 @@ static void handle_power_supply_state(struct charger *charger, int64_t now)
                  now, (int64_t)UNPLUGGED_SHUTDOWN_TIME, charger->next_pwr_check);
         } else if (now >= charger->next_pwr_check) {
             LOGW("[%" PRId64 "] shutting down\n", now);
-            android_reboot(ANDROID_RB_POWEROFF, 0, 0);
+            reboot(RB_POWER_OFF);
         } else {
             /* otherwise we already have a shutdown timer scheduled */
         }
@@ -762,9 +763,8 @@ int healthd_mode_charger_preparetowait(void)
    return (int)timeout;
 }
 
-static int input_callback(int fd, unsigned int epevents, void *data)
+static int input_callback(struct charger *charger, int fd, unsigned int epevents)
 {
-    struct charger *charger = (struct charger *)data;
     struct input_event ev;
     int ret;
 
@@ -841,7 +841,8 @@ void healthd_mode_charger_init(struct healthd_config* config)
 
     LOGW("--------------- STARTING CHARGER MODE ---------------\n");
 
-    ret = ev_init(input_callback, charger);
+    ret = ev_init(std::bind(&input_callback, charger, std::placeholders::_1,
+                            std::placeholders::_2));
     if (!ret) {
         epollfd = ev_get_epollfd();
         healthd_register_event(epollfd, charger_event_handler, EVENT_WAKEUP_FD);
@@ -880,7 +881,8 @@ void healthd_mode_charger_init(struct healthd_config* config)
             anim->frames[i].surface = scale_frames[i];
         }
     }
-    ev_sync_key_state(set_key_callback, charger);
+    ev_sync_key_state(std::bind(&set_key_callback, charger, std::placeholders::_1,
+                                std::placeholders::_2));
 
     charger->next_screen_transition = -1;
     charger->next_key_check = -1;

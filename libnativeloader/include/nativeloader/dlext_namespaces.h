@@ -22,16 +22,15 @@
 __BEGIN_DECLS
 
 /*
- * Initializes public and anonymous namespaces. The public_ns_sonames is the list of sonames
- * to be included into public namespace separated by colon. Example: "libc.so:libm.so:libdl.so".
- * The libraries in this list should be loaded prior to this call.
+ * Initializes anonymous namespaces. The shared_libs_sonames is the list of sonames
+ * to be shared by default namespace separated by colon. Example: "libc.so:libm.so:libdl.so".
  *
- * The anon_ns_library_path is the search path for anonymous namespace. The anonymous namespace
+ * The library_search_path is the search path for anonymous namespace. The anonymous namespace
  * is used in the case when linker cannot identify the caller of dlopen/dlsym. This happens
  * for the code not loaded by dynamic linker; for example calls from the mono-compiled code.
  */
-extern bool android_init_namespaces(const char* public_ns_sonames,
-                                    const char* anon_ns_library_path);
+extern bool android_init_anonymous_namespace(const char* shared_libs_sonames,
+                                             const char* library_search_path);
 
 
 enum {
@@ -56,6 +55,12 @@ enum {
    * permitted_path from the caller's namespace.
    */
   ANDROID_NAMESPACE_TYPE_SHARED = 2,
+
+  /* This flag instructs linker to enable grey-list workaround for the namespace.
+   * See http://b/26394120 for details.
+   */
+  ANDROID_NAMESPACE_TYPE_GREYLIST_ENABLED = 0x08000000,
+
   ANDROID_NAMESPACE_TYPE_SHARED_ISOLATED = ANDROID_NAMESPACE_TYPE_SHARED |
                                            ANDROID_NAMESPACE_TYPE_ISOLATED,
 };
@@ -87,6 +92,26 @@ extern struct android_namespace_t* android_create_namespace(const char* name,
                                                             android_namespace_t* parent);
 
 /*
+ * Creates a link between namespaces. Every link has list of sonames of
+ * shared libraries. These are the libraries which are accessible from
+ * namespace 'from' but loaded within namespace 'to' context.
+ * When to namespace is nullptr this function establishes a link between
+ * 'from' namespace and the default namespace.
+ *
+ * The lookup order of the libraries in namespaces with links is following:
+ * 1. Look inside current namespace using 'this' namespace search path.
+ * 2. Look in linked namespaces
+ * 2.1. Perform soname check - if library soname is not in the list of shared
+ *      libraries sonames skip this link, otherwise
+ * 2.2. Search library using linked namespace search path. Note that this
+ *      step will not go deeper into linked namespaces for this library but
+ *      will do so for DT_NEEDED libraries.
+ */
+extern bool android_link_namespaces(android_namespace_t* from,
+                                    android_namespace_t* to,
+                                    const char* shared_libs_sonames);
+
+/*
  * Get the default library search path.
  * The path will be copied into buffer, which must have space for at least
  * buffer_size chars. Elements are separated with ':', and the path will always
@@ -98,6 +123,8 @@ extern struct android_namespace_t* android_create_namespace(const char* name,
  * is sufficient and used by all callers of this function.
  */
 extern void android_get_LD_LIBRARY_PATH(char* buffer, size_t buffer_size);
+
+extern android_namespace_t* android_get_exported_namespace(const char* name);
 
 __END_DECLS
 

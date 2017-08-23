@@ -30,7 +30,8 @@
 #define __android_unused __attribute__((__unused__))
 
 #if defined(__ANDROID__)
-#include <linux/ioprio.h>
+#define IOPRIO_WHO_PROCESS (1)
+#define IOPRIO_CLASS_SHIFT (13)
 #include <sys/syscall.h>
 #include <sys/stat.h>
 

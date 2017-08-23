@@ -21,7 +21,6 @@
 #include <utils/Log.h>
 
 #include <limits.h>
-#include <sys/time.h>
 #include <time.h>
 
 #if defined(__ANDROID__)
@@ -54,7 +53,7 @@ nsecs_t systemTime(int /*clock*/)
 
 int toMillisecondTimeoutDelay(nsecs_t referenceTime, nsecs_t timeoutTime)
 {
-    int timeoutDelayMillis;
+    nsecs_t timeoutDelayMillis;
     if (timeoutTime > referenceTime) {
         uint64_t timeoutDelay = uint64_t(timeoutTime - referenceTime);
         if (timeoutDelay > uint64_t((INT_MAX - 1) * 1000000LL)) {
@@ -65,7 +64,7 @@ int toMillisecondTimeoutDelay(nsecs_t referenceTime, nsecs_t timeoutTime)
     } else {
         timeoutDelayMillis = 0;
     }
-    return timeoutDelayMillis;
+    return (int)timeoutDelayMillis;
 }
 
 

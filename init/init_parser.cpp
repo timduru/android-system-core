@@ -93,10 +93,10 @@ void Parser::ParseData(const std::string& filename, const std::string& data) {
 }
 
 bool Parser::ParseConfigFile(const std::string& path) {
-    INFO("Parsing file %s...\n", path.c_str());
+    LOG(INFO) << "Parsing file " << path << "...";
     Timer t;
     std::string data;
-    if (!read_file(path.c_str(), &data)) {
+    if (!read_file(path, &data)) {
         return false;
     }
 
@@ -106,19 +106,15 @@ bool Parser::ParseConfigFile(const std::string& path) {
         sp.second->EndFile(path);
     }
 
-    // Turning this on and letting the INFO logging be discarded adds 0.2s to
-    // Nexus 9 boot time, so it's disabled by default.
-    if (false) DumpState();
-
-    NOTICE("(Parsing %s took %.2fs.)\n", path.c_str(), t.duration());
+    LOG(VERBOSE) << "(Parsing " << path << " took " << t << ".)";
     return true;
 }
 
 bool Parser::ParseConfigDir(const std::string& path) {
-    INFO("Parsing directory %s...\n", path.c_str());
+    LOG(INFO) << "Parsing directory " << path << "...";
     std::unique_ptr<DIR, int(*)(DIR*)> config_dir(opendir(path.c_str()), closedir);
     if (!config_dir) {
-        ERROR("Could not import directory '%s'\n", path.c_str());
+        PLOG(ERROR) << "Could not import directory '" << path << "'";
         return false;
     }
     dirent* current_file;
@@ -135,7 +131,7 @@ bool Parser::ParseConfigDir(const std::string& path) {
     std::sort(files.begin(), files.end());
     for (const auto& file : files) {
         if (!ParseConfigFile(file)) {
-            ERROR("Could not import file '%s'\n", file.c_str());
+            LOG(ERROR) << "could not import file '" << file << "'";
         }
     }
     return true;
